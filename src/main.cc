@@ -6,12 +6,15 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <iostream>
 
 #include "mesh.hh"
 #include "object.hh"
 #include "program.hh"
 #include "utils.hh"
 #include "datastructs.hh"
+#include "inputs.hh"
+#include "camera.hh"
 
 void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
@@ -61,6 +64,8 @@ int main() {
     std::vector<uint32_t> indices = {};
     std::vector<InstanceVertex> instanceVertices = {};
 
+    std::cout << "hello\n";
+
     auto cubeMesh = CubeMesh();
     auto sphereMesh = SphereMesh(128, 128);
 
@@ -74,15 +79,16 @@ int main() {
 
     int width, height;
     glfwGetFramebufferSize(pWindow, &width, &height);
+
+    Camera cam = {glm::vec3{-5.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 0.0f},
+                                  glm::vec3{0.0f, 1.0f, 0.0f}, (float)M_PI_2, 1.0f, 20.0f};
     auto camU = CameraUniform{};
-    camU.pos = glm::vec3{-5.0f, 2.0f, 0.0f};
-    camU.projMatrix = glm::perspective((float)M_PI_2, (float)width / (float)height, 1.0f, 20.0f);
-    camU.viewMatrix = glm::lookAt(camU.pos, glm::vec3{0.0f, 0.0f, 0.0f},
-                                  glm::vec3{0.0f, 1.0f, 0.0f});
     auto lightU = PointLightUniform{};
     lightU.pos = glm::vec3{-10.0, 10.0, 10.0};
     lightU.intensity = 100;
     lightU.color = glm::vec3{1.0, 1.0, 1.0};
+    camU.projMatrix = cam.getPerspectiveMatrix((float)width / (float)height);
+    camU.viewMatrix = cam.getViewMatrix();
 
     // BUFFERS CREATION
     GLuint vertexBuffer;
@@ -153,13 +159,26 @@ int main() {
     }
 
     glUseProgram(program.programId);
+    registerInputFunctions(pWindow);
 
     double lastFrame = glfwGetTime();
     while (!glfwWindowShouldClose(pWindow)) {
+
         double currentFrame = glfwGetTime();
+        float ellapsedTime = (currentFrame - lastFrame);
+        lastFrame = currentFrame;
+
         glfwGetFramebufferSize(pWindow, &width, &height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        camU.projMatrix = glm::perspective((float)M_PI_2, (float)width / (float)height, 1.0f, 20.0f);
+        
+        double mousePos[2] = {0};
+        glfwGetCursorPos(pWindow, mousePos, mousePos + 1);
+        mousePos[0] = (width / 2) - mousePos[0];
+        mousePos[1] = mousePos[1] - (height / 2);
+        moveCamera(ellapsedTime, cam, mousePos);
+        glfwSetCursorPos(pWindow, width / 2, height / 2);
+        camU.projMatrix = cam.getPerspectiveMatrix((float)width / (float)height);
+        camU.viewMatrix = cam.getViewMatrix();
         glNamedBufferData(uboCamera, sizeof(camU), &camU, GL_DYNAMIC_DRAW);
         glBindVertexArray(objectsVao);
         std::map<Mesh, std::vector<Object>> instanceGroups;
