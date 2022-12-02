@@ -62,7 +62,7 @@ int main() {
     std::vector<InstanceVertex> instanceVertices = {};
 
     auto cubeMesh = CubeMesh();
-    auto sphereMesh = SphereMesh(16, 16);
+    auto sphereMesh = SphereMesh(128, 128);
 
     cubeMesh.loadIntoBuffer(vertices, indices);
     sphereMesh.loadIntoBuffer(vertices, indices);
@@ -70,14 +70,19 @@ int main() {
     std::vector<Object> scene;
     scene.push_back({cubeMesh, {0.0, 0.0, 0.0}, 1.0});
     scene.push_back({cubeMesh, {0.0, 3.0, 0.0}, 1.0});
-    scene.push_back({sphereMesh, {3.0, 3.0, 0.0}, 1.0});
+    scene.push_back({sphereMesh, {-2.0, 1.0, 0.0}, 1.0});
 
     int width, height;
     glfwGetFramebufferSize(pWindow, &width, &height);
     auto camU = CameraUniform{};
+    camU.pos = glm::vec3{-5.0f, 2.0f, 0.0f};
     camU.projMatrix = glm::perspective((float)M_PI_2, (float)width / (float)height, 1.0f, 20.0f);
-    camU.viewMatrix = glm::lookAt(glm::vec3{-5.0f, 5.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 0.0f},
+    camU.viewMatrix = glm::lookAt(camU.pos, glm::vec3{0.0f, 0.0f, 0.0f},
                                   glm::vec3{0.0f, 1.0f, 0.0f});
+    auto lightU = PointLightUniform{};
+    lightU.pos = glm::vec3{-10.0, 10.0, 10.0};
+    lightU.intensity = 100;
+    lightU.color = glm::vec3{1.0, 1.0, 1.0};
 
     // BUFFERS CREATION
     GLuint vertexBuffer;
@@ -96,6 +101,12 @@ int main() {
     glNamedBufferData(uboCamera, sizeof(camU), &camU, GL_STATIC_DRAW);
     glBindBufferBase(GL_UNIFORM_BUFFER, camU.getBindingIndex(), uboCamera);
     glBindBufferRange(GL_UNIFORM_BUFFER, camU.getBindingIndex(), uboCamera, 0, sizeof(CameraUniform));
+
+    GLuint uboLight;
+    glCreateBuffers(1, &uboLight);
+    glNamedBufferData(uboLight, sizeof(lightU), &lightU, GL_STATIC_DRAW);
+    glBindBufferBase(GL_UNIFORM_BUFFER, lightU.getBindingIndex(), uboLight);
+    glBindBufferRange(GL_UNIFORM_BUFFER, lightU.getBindingIndex(), uboLight, 0, sizeof(PointLightUniform));
 
     // ATTRIBUTES DECLARATION
     GLuint objectsVao;

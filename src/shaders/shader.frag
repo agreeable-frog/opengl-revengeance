@@ -1,8 +1,8 @@
 #version 450
 
-layout(location = 0) in vec3 normal;
+layout(location = 0) in vec3 color;
 
-layout(location = 0) out vec4 fragColor;
+layout(location = 0) out vec4 outColor;
 
 layout(std140, binding = 0) uniform uCamera {
     mat4 view;
@@ -10,5 +10,5 @@ layout(std140, binding = 0) uniform uCamera {
 } camera;
 
 void main() {
-    fragColor = vec4(normal.r, normal.g, normal.b, 1.0);
+    outColor = vec4(color, 1.0);
 }

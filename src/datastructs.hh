@@ -94,7 +94,17 @@ struct InstanceVertex {
 struct CameraUniform {
     alignas(16) glm::mat4 viewMatrix;
     alignas(16) glm::mat4 projMatrix;
+    alignas(4) glm::vec3 pos;
     static uint32_t getBindingIndex() {
         return 0;
+    }
+};
+
+struct PointLightUniform {
+    glm::vec3 pos;
+    GLfloat intensity;
+    alignas(4) glm::vec3 color;
+    static uint32_t getBindingIndex() {
+        return 1;
     }
 };
