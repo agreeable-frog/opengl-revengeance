@@ -13,6 +13,10 @@
 #include "utils.hh"
 #include "datastructs.hh"
 
+void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
+    glViewport(0, 0, width, height);
+}
+
 GLFWwindow* setupContext(int windowWidth, int windowHeight, const std::string& windowName) {
     glfwInit();
 
@@ -25,6 +29,7 @@ GLFWwindow* setupContext(int windowWidth, int windowHeight, const std::string& w
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwSetFramebufferSizeCallback(pWindow, framebufferSizeCallback);
     glfwMakeContextCurrent(pWindow);
 
     glEnable(GL_DEPTH_TEST);
@@ -57,7 +62,7 @@ int main() {
     std::vector<InstanceVertex> instanceVertices = {};
 
     auto cubeMesh = CubeMesh();
-    auto sphereMesh = SphereMesh(8, 8);
+    auto sphereMesh = SphereMesh(16, 16);
 
     cubeMesh.loadIntoBuffer(vertices, indices);
     sphereMesh.loadIntoBuffer(vertices, indices);
@@ -65,6 +70,7 @@ int main() {
     std::vector<Object> scene;
     scene.push_back({cubeMesh, {0.0, 0.0, 0.0}, 1.0});
     scene.push_back({cubeMesh, {0.0, 3.0, 0.0}, 1.0});
+    scene.push_back({sphereMesh, {3.0, 3.0, 0.0}, 1.0});
 
     int width, height;
     glfwGetFramebufferSize(pWindow, &width, &height);
@@ -88,8 +94,8 @@ int main() {
     GLuint uboCamera;
     glCreateBuffers(1, &uboCamera);
     glNamedBufferData(uboCamera, sizeof(camU), &camU, GL_STATIC_DRAW);
-    glBindBufferBase(GL_UNIFORM_BUFFER, 0, uboCamera);
-    glBindBufferRange(GL_UNIFORM_BUFFER, 0, uboCamera, 0, sizeof(CameraUniform));
+    glBindBufferBase(GL_UNIFORM_BUFFER, camU.getBindingIndex(), uboCamera);
+    glBindBufferRange(GL_UNIFORM_BUFFER, camU.getBindingIndex(), uboCamera, 0, sizeof(CameraUniform));
 
     // ATTRIBUTES DECLARATION
     GLuint objectsVao;
@@ -141,8 +147,9 @@ int main() {
     while (!glfwWindowShouldClose(pWindow)) {
         double currentFrame = glfwGetTime();
         glfwGetFramebufferSize(pWindow, &width, &height);
-        glViewport(0, 0, width, height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        camU.projMatrix = glm::perspective((float)M_PI_2, (float)width / (float)height, 1.0f, 20.0f);
+        glNamedBufferData(uboCamera, sizeof(camU), &camU, GL_DYNAMIC_DRAW);
         glBindVertexArray(objectsVao);
         std::map<Mesh, std::vector<Object>> instanceGroups;
         for (Object object : scene) {
@@ -157,7 +164,7 @@ int main() {
                 instanceVertices.push_back({modelMatrix});
             }
             glNamedBufferData(instanceBuffer, instanceVertices.size() * sizeof(InstanceVertex),
-                      instanceVertices.data(), GL_STREAM_DRAW);
+                              instanceVertices.data(), GL_STREAM_DRAW);
             glDrawElementsInstanced(GL_TRIANGLES, key.getIndicesCount(), GL_UNSIGNED_INT,
                                     (void*)key.getIndexBufferOffset(), instanceVertices.size());
         }

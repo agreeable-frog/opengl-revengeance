@@ -2,8 +2,10 @@
 
 #include <array>
 
-#include <glm/glm.hpp>
+#include <GL/glew.h>
+#include <GL/gl.h>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
 
 struct VertexBindingDescription {
     GLuint binding;
@@ -92,7 +94,7 @@ struct InstanceVertex {
 struct CameraUniform {
     alignas(16) glm::mat4 viewMatrix;
     alignas(16) glm::mat4 projMatrix;
-    static uint32_t getLocation() {
+    static uint32_t getBindingIndex() {
         return 0;
     }
 };
