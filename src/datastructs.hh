@@ -56,6 +56,9 @@ struct MeshVertex {
 
 struct InstanceVertex {
     glm::mat4 modelMatrix;
+    glm::vec3 albedo;
+    float roughness;
+    float metallic;
 
     static VertexBindingDescription getBindingDescription() {
         VertexBindingDescription bindingDescription{};
@@ -65,8 +68,8 @@ struct InstanceVertex {
         return bindingDescription;
     }
 
-    static std::array<VertexAttributeDescription, 4> getAttributeDescriptions() {
-        std::array<VertexAttributeDescription, 4> attributeDescriptions{};
+    static std::array<VertexAttributeDescription, 7> getAttributeDescriptions() {
+        std::array<VertexAttributeDescription, 7> attributeDescriptions{};
         attributeDescriptions[0].location = 3;
         attributeDescriptions[0].size = 4;
         attributeDescriptions[0].type = GL_FLOAT;
@@ -87,6 +90,21 @@ struct InstanceVertex {
         attributeDescriptions[3].type = GL_FLOAT;
         attributeDescriptions[3].offset = sizeof(GLfloat) * 12;
 
+        attributeDescriptions[4].location = 7;
+        attributeDescriptions[4].size = 3;
+        attributeDescriptions[4].type = GL_FLOAT;
+        attributeDescriptions[4].offset = offsetof(InstanceVertex, albedo);
+
+        attributeDescriptions[5].location = 8;
+        attributeDescriptions[5].size = 1;
+        attributeDescriptions[5].type = GL_FLOAT;
+        attributeDescriptions[5].offset = offsetof(InstanceVertex, roughness);
+
+        attributeDescriptions[6].location = 9;
+        attributeDescriptions[6].size = 1;
+        attributeDescriptions[6].type = GL_FLOAT;
+        attributeDescriptions[6].offset = offsetof(InstanceVertex, metallic);
+
         return attributeDescriptions;
     }
 };
@@ -101,9 +119,10 @@ struct CameraUniform {
 };
 
 struct PointLightUniform {
-    glm::vec3 pos;
-    GLfloat intensity;
-    alignas(4) glm::vec3 color;
+    glm::vec4 pos[16];
+    glm::vec4 color[16];
+    glm::vec4 intensity[16];
+    float count;
     static uint32_t getBindingIndex() {
         return 1;
     }

@@ -2,6 +2,40 @@
 
 #include <iostream>
 
+void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
+    glViewport(0, 0, width, height);
+}
+
+GLFWwindow* setupContext(int windowWidth, int windowHeight, const std::string& windowName) {
+    glfwInit();
+
+    GLFWwindow* pWindow = glfwCreateWindow(windowWidth, windowHeight, windowName.c_str(), 0, 0);
+    if (pWindow == NULL) {
+        std::cerr << "Failed to create GLFW window" << std::endl;
+        glfwTerminate();
+        return 0;
+    }
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwSetFramebufferSizeCallback(pWindow, framebufferSizeCallback);
+    glfwMakeContextCurrent(pWindow);
+
+    glEnable(GL_DEPTH_TEST);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    glEnable(GL_CULL_FACE);
+    glClearColor(0.1, 0.1, 0.1, 0.0);
+
+    glewInit();
+    if (!GLEW_ARB_direct_state_access) {
+        std::cerr << "Direct state access not available\n";
+        glfwTerminate();
+        return 0;
+    }
+    glfwSwapInterval(1);
+    return pWindow;
+}
+
 void testOpenglError() {
     GLenum err = glGetError();
     switch (err) {

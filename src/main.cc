@@ -15,40 +15,7 @@
 #include "datastructs.hh"
 #include "inputs.hh"
 #include "camera.hh"
-
-void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
-    glViewport(0, 0, width, height);
-}
-
-GLFWwindow* setupContext(int windowWidth, int windowHeight, const std::string& windowName) {
-    glfwInit();
-
-    GLFWwindow* pWindow = glfwCreateWindow(windowWidth, windowHeight, windowName.c_str(), 0, 0);
-    if (pWindow == NULL) {
-        std::cerr << "Failed to create GLFW window" << std::endl;
-        glfwTerminate();
-        return 0;
-    }
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwSetFramebufferSizeCallback(pWindow, framebufferSizeCallback);
-    glfwMakeContextCurrent(pWindow);
-
-    glEnable(GL_DEPTH_TEST);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    glEnable(GL_CULL_FACE);
-    glClearColor(0.1, 0.1, 0.1, 0.0);
-
-    glewInit();
-    if (!GLEW_ARB_direct_state_access) {
-        std::cerr << "Direct state access not available\n";
-        glfwTerminate();
-        return 0;
-    }
-    glfwSwapInterval(1);
-    return pWindow;
-}
+#include "scene.hh"
 
 int main() {
     // SETUP
@@ -60,11 +27,10 @@ int main() {
     program.linkProgram();
 
     // SCENE CREATION
+    auto scene = Scene();
     std::vector<MeshVertex> vertices = {};
     std::vector<uint32_t> indices = {};
     std::vector<InstanceVertex> instanceVertices = {};
-
-    std::cout << "hello\n";
 
     auto cubeMesh = CubeMesh();
     auto sphereMesh = SphereMesh(128, 128);
@@ -72,23 +38,18 @@ int main() {
     cubeMesh.loadIntoBuffer(vertices, indices);
     sphereMesh.loadIntoBuffer(vertices, indices);
 
-    std::vector<Object> scene;
-    scene.push_back({cubeMesh, {0.0, 0.0, 0.0}, 1.0});
-    scene.push_back({cubeMesh, {0.0, 3.0, 0.0}, 1.0});
-    scene.push_back({sphereMesh, {-2.0, 1.0, 0.0}, 1.0});
+    scene._objects.push_back({cubeMesh, {0.0, 0.0, 0.0}, 1.0, {1.0, 0.0, 0.0}, 1.0, 0.0});
+    scene._objects.push_back({cubeMesh, {0.0, 3.0, 0.0}, 1.0, {0.0, 1.0, 0.0}, 1.0, 0.0});
+    scene._objects.push_back({sphereMesh, {-2.0, 1.0, 0.0}, 1.0, {0.0, 0.0, 1.0}, 1.0, 0.0});
 
-    int width, height;
-    glfwGetFramebufferSize(pWindow, &width, &height);
-
-    Camera cam = {glm::vec3{-5.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 0.0f},
+    scene._camera = {glm::vec3{-5.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 0.0f},
                                   glm::vec3{0.0f, 1.0f, 0.0f}, (float)M_PI_2, 1.0f, 20.0f};
     auto camU = CameraUniform{};
     auto lightU = PointLightUniform{};
-    lightU.pos = glm::vec3{-10.0, 10.0, 10.0};
-    lightU.intensity = 100;
-    lightU.color = glm::vec3{1.0, 1.0, 1.0};
-    camU.projMatrix = cam.getPerspectiveMatrix((float)width / (float)height);
-    camU.viewMatrix = cam.getViewMatrix();
+    lightU.pos[0] = glm::vec4{-10.0, 10.0, 10.0, 0.0};
+    lightU.intensity[0] = glm::vec4{100.0, 0.0, 0.0, 0.0};
+    lightU.color[0] = glm::vec4{1.0, 1.0, 1.0, 0.0};
+    lightU.count = 1;
 
     // BUFFERS CREATION
     GLuint vertexBuffer;
@@ -148,7 +109,7 @@ int main() {
     // DRAW
 
     std::map<Mesh, std::vector<Object>> instanceGroups;
-    for (Object object : scene) {
+    for (Object object : scene._objects) {
         instanceGroups[object._mesh].push_back(object);
     }
     std::cout << "scene description : \n";
@@ -168,6 +129,7 @@ int main() {
         float ellapsedTime = (currentFrame - lastFrame);
         lastFrame = currentFrame;
 
+        int width, height;
         glfwGetFramebufferSize(pWindow, &width, &height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
@@ -175,23 +137,23 @@ int main() {
         glfwGetCursorPos(pWindow, mousePos, mousePos + 1);
         mousePos[0] = (width / 2) - mousePos[0];
         mousePos[1] = mousePos[1] - (height / 2);
-        moveCamera(ellapsedTime, cam, mousePos);
+        moveCamera(ellapsedTime, scene._camera, mousePos);
         glfwSetCursorPos(pWindow, width / 2, height / 2);
-        camU.projMatrix = cam.getPerspectiveMatrix((float)width / (float)height);
-        camU.viewMatrix = cam.getViewMatrix();
+        camU.projMatrix = scene._camera.getPerspectiveMatrix((float)width / (float)height);
+        camU.viewMatrix = scene._camera.getViewMatrix();
+        camU.pos = scene._camera.getPosition();
         glNamedBufferData(uboCamera, sizeof(camU), &camU, GL_DYNAMIC_DRAW);
         glBindVertexArray(objectsVao);
         std::map<Mesh, std::vector<Object>> instanceGroups;
-        for (Object object : scene) {
+        for (Object object : scene._objects) {
             instanceGroups[object._mesh].push_back(object);
         }
         for (const auto& [key, value] : instanceGroups) {
             instanceVertices = {};
             for (auto& object : value) {
-                auto modelMatrix = glm::mat4(1.0);
-                modelMatrix = glm::translate(modelMatrix, object._pos);
+                auto modelMatrix = glm::translate(glm::mat4(1.0), object._pos);
                 modelMatrix = glm::scale(modelMatrix, glm::vec3(object._scale));
-                instanceVertices.push_back({modelMatrix});
+                instanceVertices.push_back({modelMatrix, object._albedo, object._roughness, object._metallic});
             }
             glNamedBufferData(instanceBuffer, instanceVertices.size() * sizeof(InstanceVertex),
                               instanceVertices.data(), GL_STREAM_DRAW);
