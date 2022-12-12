@@ -19,14 +19,17 @@
 
 int main() {
     // SETUP
+    #pragma region SETUP
     GLFWwindow* pWindow = setupContext(640, 480, "window");
     registerDebugCallbacks();
     if (!pWindow) return 1;
-    auto program = Program();
-    program.loadShaders("src/shaders/shader.vert", "src/shaders/shader.frag");
-    program.linkProgram();
+    auto programBasic = Program();
+    programBasic.loadShaders("src/shaders/basic.vert", "src/shaders/basic.frag");
+    programBasic.linkProgram();
+    #pragma endregion
 
     // SCENE CREATION
+    #pragma region SCENE_CREATION
     auto scene = Scene();
     std::vector<MeshVertex> vertices = {};
     std::vector<uint32_t> indices = {};
@@ -39,8 +42,6 @@ int main() {
     sphereMesh.loadIntoBuffer(vertices, indices);
 
     scene._objects.push_back({cubeMesh, {0.0, 0.0, 0.0}, 1.0, {1.0, 0.0, 0.0}});
-    scene._objects.push_back({cubeMesh, {0.0, 3.0, 0.0}, 1.0, {0.0, 1.0, 0.0}});
-    scene._objects.push_back({sphereMesh, {-2.0, 1.0, 0.0}, 1.0, {0.0, 0.0, 1.0}});
 
     scene._camera = {glm::vec3{-5.0f, 0.0f, 0.0f},
                      glm::vec3{0.0f, 0.0f, 0.0f},
@@ -54,8 +55,10 @@ int main() {
     lightU.intensity[0] = 100.0;
     lightU.color[0] = {1.0, 1.0, 1.0};
     lightU.count = 1;
+    #pragma endregion
 
     // BUFFERS CREATION
+    #pragma region BUFFERS_CREATION
     GLuint vertexBuffer;
     GLuint indexBuffer;
     GLuint instanceBuffer;
@@ -80,8 +83,10 @@ int main() {
     glBindBufferBase(GL_UNIFORM_BUFFER, lightU.getBindingIndex(), uboLight);
     glBindBufferRange(GL_UNIFORM_BUFFER, lightU.getBindingIndex(), uboLight, 0,
                       sizeof(PointLightUniform));
+    #pragma endregion
 
-    // ATTRIBUTES DECLARATION
+    // VERTEX SPECIFICATION
+    #pragma region VERTEX_SPECIFICATION
     GLuint objectsVao;
     glCreateVertexArrays(1, &objectsVao);
 
@@ -111,21 +116,9 @@ int main() {
             instanceAttributeDescription.type, false, instanceAttributeDescription.offset);
         glEnableVertexArrayAttrib(objectsVao, instanceAttributeDescription.location);
     }
+    #pragma endregion
 
     // DRAW
-
-    std::map<Mesh, std::vector<Object>> instanceGroups;
-    for (Object object : scene._objects) {
-        instanceGroups[object._mesh].push_back(object);
-    }
-    std::cout << "scene description : \n";
-    std::cout << "number of different meshes in scene : " << instanceGroups.size() << '\n';
-    std::cout << "objects for each mesh : \n";
-    for (auto& [key, value] : instanceGroups) {
-        std::cout << "mesh " << key._id << " : " << value.size() << " objects\n";
-    }
-
-    glUseProgram(program.programId);
     registerInputFunctions(pWindow);
 
     double lastFrame = glfwGetTime();
@@ -148,6 +141,8 @@ int main() {
         camU.viewMatrix = scene._camera.getViewMatrix();
         camU.pos = scene._camera.getPosition();
         glNamedBufferData(uboCamera, sizeof(camU), &camU, GL_DYNAMIC_DRAW);
+
+        glUseProgram(programBasic.programId);
         glBindVertexArray(objectsVao);
         std::map<Mesh, std::vector<Object>> instanceGroups;
         for (Object object : scene._objects) {
