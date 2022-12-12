@@ -38,17 +38,21 @@ int main() {
     cubeMesh.loadIntoBuffer(vertices, indices);
     sphereMesh.loadIntoBuffer(vertices, indices);
 
-    scene._objects.push_back({cubeMesh, {0.0, 0.0, 0.0}, 1.0, {1.0, 0.0, 0.0}, 1.0, 0.0});
-    scene._objects.push_back({cubeMesh, {0.0, 3.0, 0.0}, 1.0, {0.0, 1.0, 0.0}, 1.0, 0.0});
-    scene._objects.push_back({sphereMesh, {-2.0, 1.0, 0.0}, 1.0, {0.0, 0.0, 1.0}, 1.0, 0.0});
+    scene._objects.push_back({cubeMesh, {0.0, 0.0, 0.0}, 1.0, {1.0, 0.0, 0.0}});
+    scene._objects.push_back({cubeMesh, {0.0, 3.0, 0.0}, 1.0, {0.0, 1.0, 0.0}});
+    scene._objects.push_back({sphereMesh, {-2.0, 1.0, 0.0}, 1.0, {0.0, 0.0, 1.0}});
 
-    scene._camera = {glm::vec3{-5.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 0.0f},
-                                  glm::vec3{0.0f, 1.0f, 0.0f}, (float)M_PI_2, 1.0f, 20.0f};
+    scene._camera = {glm::vec3{-5.0f, 0.0f, 0.0f},
+                     glm::vec3{0.0f, 0.0f, 0.0f},
+                     glm::vec3{0.0f, 1.0f, 0.0f},
+                     (float)M_PI_2,
+                     1.0f,
+                     20.0f};
     auto camU = CameraUniform{};
     auto lightU = PointLightUniform{};
-    lightU.pos[0] = glm::vec4{-10.0, 10.0, 10.0, 0.0};
-    lightU.intensity[0] = glm::vec4{100.0, 0.0, 0.0, 0.0};
-    lightU.color[0] = glm::vec4{1.0, 1.0, 1.0, 0.0};
+    lightU.pos[0] = {-10.0f, 10.0f, 10.0f};
+    lightU.intensity[0] = 100.0;
+    lightU.color[0] = {1.0, 1.0, 1.0};
     lightU.count = 1;
 
     // BUFFERS CREATION
@@ -67,13 +71,15 @@ int main() {
     glCreateBuffers(1, &uboCamera);
     glNamedBufferData(uboCamera, sizeof(camU), &camU, GL_STATIC_DRAW);
     glBindBufferBase(GL_UNIFORM_BUFFER, camU.getBindingIndex(), uboCamera);
-    glBindBufferRange(GL_UNIFORM_BUFFER, camU.getBindingIndex(), uboCamera, 0, sizeof(CameraUniform));
+    glBindBufferRange(GL_UNIFORM_BUFFER, camU.getBindingIndex(), uboCamera, 0,
+                      sizeof(CameraUniform));
 
     GLuint uboLight;
     glCreateBuffers(1, &uboLight);
     glNamedBufferData(uboLight, sizeof(lightU), &lightU, GL_STATIC_DRAW);
     glBindBufferBase(GL_UNIFORM_BUFFER, lightU.getBindingIndex(), uboLight);
-    glBindBufferRange(GL_UNIFORM_BUFFER, lightU.getBindingIndex(), uboLight, 0, sizeof(PointLightUniform));
+    glBindBufferRange(GL_UNIFORM_BUFFER, lightU.getBindingIndex(), uboLight, 0,
+                      sizeof(PointLightUniform));
 
     // ATTRIBUTES DECLARATION
     GLuint objectsVao;
@@ -124,7 +130,6 @@ int main() {
 
     double lastFrame = glfwGetTime();
     while (!glfwWindowShouldClose(pWindow)) {
-
         double currentFrame = glfwGetTime();
         float ellapsedTime = (currentFrame - lastFrame);
         lastFrame = currentFrame;
@@ -132,7 +137,7 @@ int main() {
         int width, height;
         glfwGetFramebufferSize(pWindow, &width, &height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        
+
         double mousePos[2] = {0};
         glfwGetCursorPos(pWindow, mousePos, mousePos + 1);
         mousePos[0] = (width / 2) - mousePos[0];
@@ -153,7 +158,7 @@ int main() {
             for (auto& object : value) {
                 auto modelMatrix = glm::translate(glm::mat4(1.0), object._pos);
                 modelMatrix = glm::scale(modelMatrix, glm::vec3(object._scale));
-                instanceVertices.push_back({modelMatrix, object._albedo, object._roughness, object._metallic});
+                instanceVertices.push_back({modelMatrix, object._albedo});
             }
             glNamedBufferData(instanceBuffer, instanceVertices.size() * sizeof(InstanceVertex),
                               instanceVertices.data(), GL_STREAM_DRAW);
