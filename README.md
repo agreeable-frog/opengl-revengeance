@@ -2,12 +2,6 @@
 
 ### Goals
 
-* Can show spheres and cubes
-* 3D scene that can be roamed with a free camera
-* Can show any mesh
-* Simple lightning and brdf
-* Gravity
-* Collision between spheres
-* Add cubes to collisions
-* Make an object explode
-* Make the debris have collision
+* 3D Scene with camera
+* Visualise a heightmap with a tesselation shader [learnopengl](https://learnopengl.com/Guest-Articles/2021/Tessellation/Tessellation)
+* Dynamically modify this map [paper](http://www.diva-portal.org/smash/get/diva2:1333403/FULLTEXT01.pdf)
