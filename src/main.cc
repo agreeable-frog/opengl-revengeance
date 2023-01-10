@@ -187,6 +187,7 @@ int main() {
         auto modelMatrix = glm::translate(glm::mat4(1.0), object._pos);
         modelMatrix = glm::scale(modelMatrix, glm::vec3(object._scale));
         instanceVertices.push_back({modelMatrix, object._albedo});
+        //snowfield._heightmap_texture.bind(0);
         glNamedBufferData(instanceBuffer, instanceVertices.size() * sizeof(InstanceVertex),
                           instanceVertices.data(), GL_STREAM_DRAW);
         glDrawElementsInstanced(GL_PATCHES, snowFieldMesh.getIndicesCount(), GL_UNSIGNED_INT,

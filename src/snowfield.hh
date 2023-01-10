@@ -1,6 +1,7 @@
 #pragma once
 
 #include "object.hh"
+#include "heightmap_texture.hh"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -16,7 +17,8 @@ public:
     float _length;
     glm::vec3 _left;
     float _width;
-    std::list<float> _heightmap;
+    std::list<float> _heightmap_data;
+    HeightMapTexture _heightmap_texture;
     uint _heightmapLength;
     uint _heightmapWidth;
 
@@ -28,7 +30,8 @@ public:
           _forward(glm::normalize(forward)),
           _length(length),
           _left(glm::cross(_up, _forward)),
-          _width(width){};
+          _width(width),
+          _heightmap_texture(width, length){};
 
     Mesh getBaseMesh();
     Mesh getFieldMesh();
