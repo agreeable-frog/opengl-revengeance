@@ -30,5 +30,6 @@ public:
           _left(glm::cross(_up, _forward)),
           _width(width){};
 
+    Mesh getBaseMesh();
     Mesh getFieldMesh();
 };

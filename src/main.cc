@@ -19,21 +19,22 @@
 #include "snowfield.hh"
 
 int main() {
-    // SETUP
-    #pragma region SETUP
+// SETUP
+#pragma region SETUP
     GLFWwindow* pWindow = setupContext(640, 480, "window");
     registerDebugCallbacks();
     if (!pWindow) return 1;
     auto programBasic = Program();
     programBasic.loadShaders("src/shaders/basic.vert", "src/shaders/basic.frag");
     programBasic.linkProgram();
-    /* auto programSnowfield = Program();
-    programSnowfield.loadShaders("src/shaders/snowfield.vert", "src/shaders/snowfield.frag");
-    programSnowfield.linkProgram(); */
-    #pragma endregion
+    auto programSnowfield = Program();
+    programSnowfield.loadShaders("src/shaders/snowfield.vert", "src/shaders/snowfield.tesc",
+                                 "src/shaders/snowfield.tese", "src/shaders/snowfield.frag");
+    programSnowfield.linkProgram();
+#pragma endregion
 
-    // SCENE CREATION
-    #pragma region SCENE_CREATION
+// SCENE CREATION
+#pragma region SCENE_CREATION
     auto scene = Scene();
     std::vector<MeshVertex> vertices = {};
     std::vector<uint32_t> indices = {};
@@ -60,14 +61,17 @@ int main() {
     lightU.color[0] = {1.0, 1.0, 1.0};
     lightU.count = 1;
 
-    auto snowfield = Snowfield({0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, 1.0f, {1.0f, 0.0f, 0.0f}, 5.0f, 5.0f);
+    auto snowfield =
+        Snowfield({0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, 1.0f, {1.0f, 0.0f, 0.0f}, 5.0f, 5.0f);
+    auto snowFieldBaseMesh = snowfield.getBaseMesh();
+    snowFieldBaseMesh.loadIntoBuffer(vertices, indices);
+    scene._objects.push_back({snowFieldBaseMesh, snowfield._center, 1.0f, {1.0f, 1.0f, 1.0f}});
     auto snowFieldMesh = snowfield.getFieldMesh();
     snowFieldMesh.loadIntoBuffer(vertices, indices);
-    scene._objects.push_back({snowFieldMesh, snowfield._center, 1.0f, {1.0f, 1.0f, 1.0f}});
-    #pragma endregion
+#pragma endregion
 
-    // BUFFERS CREATION
-    #pragma region BUFFERS_CREATION
+// BUFFERS CREATION
+#pragma region BUFFERS_CREATION
     GLuint vertexBuffer;
     GLuint indexBuffer;
     GLuint instanceBuffer;
@@ -92,10 +96,10 @@ int main() {
     glBindBufferBase(GL_UNIFORM_BUFFER, lightU.getBindingIndex(), uboLight);
     glBindBufferRange(GL_UNIFORM_BUFFER, lightU.getBindingIndex(), uboLight, 0,
                       sizeof(PointLightUniform));
-    #pragma endregion
+#pragma endregion
 
-    // VERTEX SPECIFICATION
-    #pragma region VERTEX_SPECIFICATION
+// VERTEX SPECIFICATION
+#pragma region VERTEX_SPECIFICATION
     GLuint objectsVao;
     glCreateVertexArrays(1, &objectsVao);
 
@@ -125,11 +129,10 @@ int main() {
             instanceAttributeDescription.type, false, instanceAttributeDescription.offset);
         glEnableVertexArrayAttrib(objectsVao, instanceAttributeDescription.location);
     }
-    GLuint snowfieldVao;
-    #pragma endregion
+#pragma endregion
 
-    // DRAW
-    #pragma region DRAW
+// DRAW
+#pragma region DRAW
     registerInputFunctions(pWindow);
 
     double lastFrame = glfwGetTime();
@@ -142,7 +145,7 @@ int main() {
         glfwGetFramebufferSize(pWindow, &width, &height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        #pragma region CAMERA_CONTROL
+#pragma region CAMERA_CONTROL
         double mousePos[2] = {0};
         glfwGetCursorPos(pWindow, mousePos, mousePos + 1);
         mousePos[0] = (width / 2) - mousePos[0];
@@ -153,9 +156,9 @@ int main() {
         camU.viewMatrix = scene._camera.getViewMatrix();
         camU.pos = scene._camera.getPosition();
         glNamedBufferData(uboCamera, sizeof(camU), &camU, GL_DYNAMIC_DRAW);
-        #pragma endregion
+#pragma endregion
 
-        #pragma region OBJECTS_DRAW
+#pragma region OBJECTS_DRAW
         glUseProgram(programBasic.programId);
         glBindVertexArray(objectsVao);
         std::map<Mesh, std::vector<Object>> instanceGroups;
@@ -174,12 +177,28 @@ int main() {
             glDrawElementsInstanced(GL_TRIANGLES, key.getIndicesCount(), GL_UNSIGNED_INT,
                                     (void*)key.getIndexBufferOffset(), instanceVertices.size());
         }
-        #pragma endregion
+#pragma endregion
+
+#pragma region DRAW_SNOWFIELD
+        glUseProgram(programSnowfield.programId);
+        glPatchParameteri(GL_PATCH_VERTICES, 4);
+        Object object = Object(snowFieldMesh, snowfield._center, 1.0f, {1.0f, 0.0f, 0.0f});
+        instanceVertices = {};
+        auto modelMatrix = glm::translate(glm::mat4(1.0), object._pos);
+        modelMatrix = glm::scale(modelMatrix, glm::vec3(object._scale));
+        instanceVertices.push_back({modelMatrix, object._albedo});
+        glNamedBufferData(instanceBuffer, instanceVertices.size() * sizeof(InstanceVertex),
+                          instanceVertices.data(), GL_STREAM_DRAW);
+        glDrawElementsInstanced(GL_PATCHES, snowFieldMesh.getIndicesCount(), GL_UNSIGNED_INT,
+                                (void*)snowFieldMesh.getIndexBufferOffset(),
+                                instanceVertices.size());
+
+#pragma endregion
 
         glfwSwapBuffers(pWindow);
         glfwPollEvents();
     }
-    #pragma endregion
+#pragma endregion
     glfwDestroyWindow(pWindow);
     glfwTerminate();
     return 0;

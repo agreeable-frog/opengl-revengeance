@@ -6,11 +6,13 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <string>
+#include <vector>
 
 class Program {
 public:
     GLuint programId;
-    GLuint shaderId[2];
+    std::vector<GLuint> shaderId;
     void loadShaders(const std::string&, const std::string&);
+    void loadShaders(const std::string&, const std::string&, const std::string&, const std::string&);
     void linkProgram(void);
 };

@@ -23,7 +23,7 @@ struct VertexAttributeDescription {
 struct MeshVertex {
     glm::vec3 pos;
     glm::vec3 normal;
-    glm::vec3 color;
+    glm::vec2 uvs;
 
     static VertexBindingDescription getBindingDescription() {
         VertexBindingDescription bindingDescription{};
@@ -46,9 +46,9 @@ struct MeshVertex {
         attributeDescriptions[1].offset = offsetof(MeshVertex, normal);
 
         attributeDescriptions[2].location = 2;
-        attributeDescriptions[2].size = 3;
+        attributeDescriptions[2].size = 2;
         attributeDescriptions[2].type = GL_FLOAT;
-        attributeDescriptions[2].offset = offsetof(MeshVertex, color);
+        attributeDescriptions[2].offset = offsetof(MeshVertex, uvs);
 
         return attributeDescriptions;
     }
