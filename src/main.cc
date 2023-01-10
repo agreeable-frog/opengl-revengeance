@@ -48,7 +48,7 @@ int main() {
 
     scene._objects.push_back({cubeMesh, {0.0f, 0.0f, 0.0f}, 1.0f, {1.0f, 0.0f, 0.0f}});
 
-    scene._camera = {glm::vec3{-5.0f, 0.01f, 0.01f},
+    scene._camera = {glm::vec3{-5.0f, 5.01f, 0.01f},
                      glm::vec3{0.0f, 0.0f, 0.0f},
                      glm::vec3{0.0f, 1.0f, 0.0f},
                      (float)M_PI_2,
@@ -68,6 +68,13 @@ int main() {
     scene._objects.push_back({snowFieldBaseMesh, snowfield._center, 1.0f, {1.0f, 1.0f, 1.0f}});
     auto snowFieldMesh = snowfield.getFieldMesh();
     snowFieldMesh.loadIntoBuffer(vertices, indices);
+    std::vector<float> map = std::vector<float>(100 * 100, 0.0f);
+    for (size_t i = 0; i < 50; i++) {
+        for (size_t j = 0; j < 50; j++) {
+            map[i * 100 + j] = 1.0f;
+        }
+    }
+    snowfield._heightmap_texture.fill(map);
 #pragma endregion
 
 // BUFFERS CREATION
@@ -182,6 +189,7 @@ int main() {
 #pragma region DRAW_SNOWFIELD
         glUseProgram(programSnowfield.programId);
         glPatchParameteri(GL_PATCH_VERTICES, 4);
+        snowfield._heightmap_texture.bind(0);
         Object object = Object(snowFieldMesh, snowfield._center, 1.0f, {1.0f, 0.0f, 0.0f});
         instanceVertices = {};
         auto modelMatrix = glm::translate(glm::mat4(1.0), object._pos);

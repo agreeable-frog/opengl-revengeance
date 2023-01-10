@@ -5,7 +5,9 @@ HeightMapTexture::HeightMapTexture(uint width, uint height)  :
     _height(height) {
     glCreateTextures(GL_TEXTURE_2D, 1, &_handle);
 
-    glTextureStorage2D(_handle, 0, GL_DEPTH_COMPONENT32, _width, _height);
+    glTextureParameteri(_handle, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTextureParameteri(_handle, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTextureStorage2D(_handle, 1, GL_DEPTH_COMPONENT32, _width, _height);
 }
 
 HeightMapTexture::~HeightMapTexture() {
