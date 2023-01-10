@@ -6,7 +6,7 @@
 
 class Object {
 public:
-    Object(const Mesh& mesh, const glm::vec3& pos, float scale, glm::vec3 albedo)
+    Object(Mesh& mesh, const glm::vec3& pos, float scale, glm::vec3 albedo)
         : _mesh(mesh),
           _pos(pos),
           _scale(scale),
@@ -14,7 +14,7 @@ public:
         static uint32_t uid = 0;
         _id = ++uid;
     }
-    const Mesh& _mesh;
+    Mesh& _mesh;
     glm::vec3 _pos;
     float _scale;
     glm::vec3 _albedo;

@@ -17,8 +17,8 @@ static std::string loadText(const std::string& filename) {
 }
 
 void Program::loadShaders(const std::string& vertShaderPath, const std::string& fragShaderPath) {
-    std::string vertSrc = loadText("src/shaders/shader.vert");
-    std::string fragSrc = loadText("src/shaders/shader.frag");
+    std::string vertSrc = loadText(vertShaderPath);
+    std::string fragSrc = loadText(fragShaderPath);
     char* vertSrcData = (char*)std::malloc(vertSrc.length() * sizeof(char));
     char* fragSrcData = (char*)std::malloc(fragSrc.length() * sizeof(char));
     vertSrc.copy(vertSrcData, vertSrc.length());

@@ -8,7 +8,7 @@ SRC       := src
 CC        := g++
 DBG_FLAGS :=-g -DDEBUG
 OPT_FLAGS :=-o3 -DNDEBUG
-CFLAGS    := -std=c++2a -I$(INCLUDE) -isystem libs -Wall
+CFLAGS    := -std=c++2a -I$(INCLUDE) -isystem libs -Wall -Wno-unknown-pragmas
 LDLIBS    := -lGL -lGLEW -lglfw -lpthread
 SRCS      := $(wildcard $(SRC)/*.cc)
 HHS       := $(wildcard $(SRC)/*.hh)

@@ -17,10 +17,8 @@ protected:
 
 public:
     uint32_t _id;
-    Mesh() {
-        static uint32_t uid = 0;
-        _id = ++uid;
-    }
+    Mesh();
+    Mesh(std::vector<MeshVertex> vertices, std::vector<uint32_t> indices);
     uint32_t getVertexBufferOffset() const {
         return _vertexBufferOffset;
     };

@@ -16,6 +16,7 @@
 #include "inputs.hh"
 #include "camera.hh"
 #include "scene.hh"
+#include "snowfield.hh"
 
 int main() {
     // SETUP
@@ -26,6 +27,9 @@ int main() {
     auto programBasic = Program();
     programBasic.loadShaders("src/shaders/basic.vert", "src/shaders/basic.frag");
     programBasic.linkProgram();
+    /* auto programSnowfield = Program();
+    programSnowfield.loadShaders("src/shaders/snowfield.vert", "src/shaders/snowfield.frag");
+    programSnowfield.linkProgram(); */
     #pragma endregion
 
     // SCENE CREATION
@@ -41,9 +45,9 @@ int main() {
     cubeMesh.loadIntoBuffer(vertices, indices);
     sphereMesh.loadIntoBuffer(vertices, indices);
 
-    scene._objects.push_back({cubeMesh, {0.0, 0.0, 0.0}, 1.0, {1.0, 0.0, 0.0}});
+    scene._objects.push_back({cubeMesh, {0.0f, 0.0f, 0.0f}, 1.0f, {1.0f, 0.0f, 0.0f}});
 
-    scene._camera = {glm::vec3{-5.0f, 0.0f, 0.0f},
+    scene._camera = {glm::vec3{-5.0f, 0.01f, 0.01f},
                      glm::vec3{0.0f, 0.0f, 0.0f},
                      glm::vec3{0.0f, 1.0f, 0.0f},
                      (float)M_PI_2,
@@ -55,6 +59,11 @@ int main() {
     lightU.intensity[0] = 100.0;
     lightU.color[0] = {1.0, 1.0, 1.0};
     lightU.count = 1;
+
+    auto snowfield = Snowfield({0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, 1.0f, {1.0f, 0.0f, 0.0f}, 5.0f, 5.0f);
+    auto snowFieldMesh = snowfield.getFieldMesh();
+    snowFieldMesh.loadIntoBuffer(vertices, indices);
+    scene._objects.push_back({snowFieldMesh, snowfield._center, 1.0f, {1.0f, 1.0f, 1.0f}});
     #pragma endregion
 
     // BUFFERS CREATION
@@ -116,9 +125,11 @@ int main() {
             instanceAttributeDescription.type, false, instanceAttributeDescription.offset);
         glEnableVertexArrayAttrib(objectsVao, instanceAttributeDescription.location);
     }
+    GLuint snowfieldVao;
     #pragma endregion
 
     // DRAW
+    #pragma region DRAW
     registerInputFunctions(pWindow);
 
     double lastFrame = glfwGetTime();
@@ -131,6 +142,7 @@ int main() {
         glfwGetFramebufferSize(pWindow, &width, &height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        #pragma region CAMERA_CONTROL
         double mousePos[2] = {0};
         glfwGetCursorPos(pWindow, mousePos, mousePos + 1);
         mousePos[0] = (width / 2) - mousePos[0];
@@ -141,7 +153,9 @@ int main() {
         camU.viewMatrix = scene._camera.getViewMatrix();
         camU.pos = scene._camera.getPosition();
         glNamedBufferData(uboCamera, sizeof(camU), &camU, GL_DYNAMIC_DRAW);
+        #pragma endregion
 
+        #pragma region OBJECTS_DRAW
         glUseProgram(programBasic.programId);
         glBindVertexArray(objectsVao);
         std::map<Mesh, std::vector<Object>> instanceGroups;
@@ -160,9 +174,12 @@ int main() {
             glDrawElementsInstanced(GL_TRIANGLES, key.getIndicesCount(), GL_UNSIGNED_INT,
                                     (void*)key.getIndexBufferOffset(), instanceVertices.size());
         }
+        #pragma endregion
+
         glfwSwapBuffers(pWindow);
         glfwPollEvents();
     }
+    #pragma endregion
     glfwDestroyWindow(pWindow);
     glfwTerminate();
     return 0;
