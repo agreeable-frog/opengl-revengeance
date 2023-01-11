@@ -19,6 +19,12 @@
 #include "scene.hh"
 #include "snowfield.hh"
 
+#define TEST_OPENGL_ERROR()                                                             \
+    do {                                                                                \
+        GLenum err = glGetError();                                                      \
+        if (err != GL_NO_ERROR) std::cerr << "OpenGL ERROR! " << __LINE__ << std::endl; \
+    } while (0)
+
 int main() {
 // SETUP
 #pragma region SETUP
@@ -30,8 +36,12 @@ int main() {
     programBasic.linkProgram();
     auto programSnowfield = Program();
     programSnowfield.loadShaders("src/shaders/snowfield.vert", "src/shaders/snowfield.tesc",
-                                 "src/shaders/snowfield.tese", "src/shaders/snowfield.geom", "src/shaders/snowfield.frag");
+                                 "src/shaders/snowfield.tese", "src/shaders/snowfield.geom",
+                                 "src/shaders/snowfield.frag");
     programSnowfield.linkProgram();
+    auto programDepthcheck = Program();
+    programDepthcheck.loadShaders("src/shaders/depthcheck.vert", "src/shaders/depthcheck.frag");
+    programDepthcheck.linkProgram();
 #pragma endregion
 
 // SCENE CREATION
@@ -66,7 +76,7 @@ int main() {
                                5.0f, 5.0f, 100, 100);
     auto snowFieldBaseMesh = snowfield.getBaseMesh();
     snowFieldBaseMesh.loadIntoBuffer(vertices, indices);
-    scene._objects.push_back({snowFieldBaseMesh, snowfield._center, 1.0f, {1.0f, 1.0f, 1.0f}});
+    // scene._objects.push_back({snowFieldBaseMesh, snowfield._center, 1.0f, {1.0f, 1.0f, 1.0f}});
     auto snowFieldMesh = snowfield.getFieldMesh();
     snowFieldMesh.loadIntoBuffer(vertices, indices);
     std::vector<float> map = std::vector<float>(
@@ -138,6 +148,21 @@ int main() {
             instanceAttributeDescription.type, false, instanceAttributeDescription.offset);
         glEnableVertexArrayAttrib(objectsVao, instanceAttributeDescription.location);
     }
+
+    GLuint depthTexture;
+    glCreateTextures(GL_TEXTURE_2D, 1, &depthTexture); TEST_OPENGL_ERROR();
+    glTextureParameteri(depthTexture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); TEST_OPENGL_ERROR();
+    glTextureParameteri(depthTexture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); TEST_OPENGL_ERROR();
+    glTextureParameteri(depthTexture, GL_TEXTURE_MIN_FILTER, GL_NEAREST); TEST_OPENGL_ERROR();
+    glTextureParameteri(depthTexture, GL_TEXTURE_MAG_FILTER, GL_NEAREST); TEST_OPENGL_ERROR();
+    glTextureStorage2D(depthTexture, 1, GL_DEPTH_COMPONENT32, snowfield._heightmap_texture._width,
+                       snowfield._heightmap_texture._height); TEST_OPENGL_ERROR();
+
+    GLuint framebuffer1;
+    glCreateFramebuffers(1, &framebuffer1); TEST_OPENGL_ERROR();
+    glNamedFramebufferTexture(framebuffer1, GL_DEPTH_ATTACHMENT, depthTexture, 0); TEST_OPENGL_ERROR();
+
+    glCheckNamedFramebufferStatus(framebuffer1, GL_FRAMEBUFFER); TEST_OPENGL_ERROR();
 #pragma endregion
 
 // DRAW
@@ -152,26 +177,19 @@ int main() {
 
         int width, height;
         glfwGetFramebufferSize(pWindow, &width, &height);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glBindVertexArray(objectsVao);
 
-#pragma region INPUTS
-        double mousePos[2] = {0};
-        glfwGetCursorPos(pWindow, mousePos, mousePos + 1);
-        mousePos[0] = (width / 2) - mousePos[0];
-        mousePos[1] = mousePos[1] - (height / 2);
-        moveCamera(ellapsedTime, scene._camera, mousePos);
-        glfwSetCursorPos(pWindow, width / 2, height / 2);
-        camU.projMatrix = scene._camera.getPerspectiveMatrix((float)width / (float)height);
-        camU.viewMatrix = scene._camera.getViewMatrix();
-        camU.pos = scene._camera.getPosition();
+#pragma region DEFORM_SNOWFIELD
+
+        camU.projMatrix = snowfield._camera.getOrthoMatrix();
+        camU.viewMatrix = snowfield._camera.getViewMatrix();
+        camU.pos = {0.0f, 0.0f, 0.0f};
         glNamedBufferData(uboCamera, sizeof(camU), &camU, GL_DYNAMIC_DRAW);
 
-        regenerateRandomSnowfield(currentFrame, snowfield);
-#pragma endregion
+        glUseProgram(programDepthcheck.programId);
+        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer1); TEST_OPENGL_ERROR();
+        glClear(GL_DEPTH_BUFFER_BIT);
 
-#pragma region OBJECTS_DRAW
-        glUseProgram(programBasic.programId);
-        glBindVertexArray(objectsVao);
         std::map<Mesh, std::vector<Object>> instanceGroups;
         for (Object object : scene._objects) {
             instanceGroups[object._mesh].push_back(object);
@@ -188,24 +206,68 @@ int main() {
             glDrawElementsInstanced(GL_TRIANGLES, key.getIndicesCount(), GL_UNSIGNED_INT,
                                     (void*)key.getIndexBufferOffset(), instanceVertices.size());
         }
+
+        /* std::vector<GLfloat>* d = new std::vector<GLfloat>(snowfield._heightmap_texture._width *
+                                                           snowfield._heightmap_texture._height);
+        glReadPixels(0, 0, snowfield._heightmap_texture._width,
+                     snowfield._heightmap_texture._height, GL_DEPTH_COMPONENT, GL_FLOAT, d->data()); */
+
+#pragma endregion
+
+#pragma region INPUTS
+        double mousePos[2] = {0};
+        glfwGetCursorPos(pWindow, mousePos, mousePos + 1);
+        mousePos[0] = (width / 2) - mousePos[0];
+        mousePos[1] = mousePos[1] - (height / 2);
+        moveCamera(ellapsedTime, scene._camera, mousePos);
+        glfwSetCursorPos(pWindow, width / 2, height / 2);
+        camU.projMatrix = scene._camera.getPerspectiveMatrix((float)width / (float)height);
+        camU.viewMatrix = scene._camera.getViewMatrix();
+        camU.pos = scene._camera.getPosition();
+        glNamedBufferData(uboCamera, sizeof(camU), &camU, GL_DYNAMIC_DRAW);
+
+        regenerateRandomSnowfield(currentFrame, snowfield);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 #pragma endregion
 
 #pragma region DRAW_SNOWFIELD
         glUseProgram(programSnowfield.programId);
         glPatchParameteri(GL_PATCH_VERTICES, 4);
+        //snowfield._heightmap_texture.fill(*d);
         snowfield._heightmap_texture.bind(0);
         Object object = Object(snowFieldMesh, snowfield._center, 1.0f, {1.0f, 0.0f, 0.0f});
         instanceVertices = {};
         auto modelMatrix = glm::translate(glm::mat4(1.0), object._pos);
         modelMatrix = glm::scale(modelMatrix, glm::vec3(object._scale));
         instanceVertices.push_back({modelMatrix, object._albedo});
-        // snowfield._heightmap_texture.bind(0);
         glNamedBufferData(instanceBuffer, instanceVertices.size() * sizeof(InstanceVertex),
                           instanceVertices.data(), GL_STREAM_DRAW);
         glDrawElementsInstanced(GL_PATCHES, snowFieldMesh.getIndicesCount(), GL_UNSIGNED_INT,
                                 (void*)snowFieldMesh.getIndexBufferOffset(),
                                 instanceVertices.size());
+        //delete d;
 
+#pragma endregion
+
+#pragma region OBJECTS_DRAW
+        glUseProgram(programBasic.programId);
+        instanceGroups = std::map<Mesh, std::vector<Object>>();
+        for (Object object : scene._objects) {
+            instanceGroups[object._mesh].push_back(object);
+        }
+        for (const auto& [key, value] : instanceGroups) {
+            instanceVertices = {};
+            for (auto& object : value) {
+                auto modelMatrix = glm::translate(glm::mat4(1.0), object._pos);
+                modelMatrix = glm::scale(modelMatrix, glm::vec3(object._scale));
+                instanceVertices.push_back({modelMatrix, object._albedo});
+            }
+            glNamedBufferData(instanceBuffer, instanceVertices.size() * sizeof(InstanceVertex),
+                              instanceVertices.data(), GL_STREAM_DRAW);
+            glDrawElementsInstanced(GL_TRIANGLES, key.getIndicesCount(), GL_UNSIGNED_INT,
+                                    (void*)key.getIndexBufferOffset(), instanceVertices.size());
+        }
 #pragma endregion
 
         updatePhysics(scene._objects, ellapsedTime);
