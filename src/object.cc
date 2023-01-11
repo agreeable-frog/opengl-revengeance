@@ -8,8 +8,8 @@ void updatePhysics(std::vector<Object> &objects, float dt) {
 
         o._pos += o._velocity;
 
-        if (o._pos.y < 0) {
-            o._pos.y = 0;
+        if (o._pos.y - o._scale < 0) {
+            o._pos.y = o._scale;
             o._velocity.y = -o._velocity.y / 2;
         }
     }
