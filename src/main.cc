@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <cstdlib>
 
 #include "mesh.hh"
 #include "object.hh"
@@ -29,7 +30,7 @@ int main() {
     programBasic.linkProgram();
     auto programSnowfield = Program();
     programSnowfield.loadShaders("src/shaders/snowfield.vert", "src/shaders/snowfield.tesc",
-                                 "src/shaders/snowfield.tese", "src/shaders/snowfield.frag");
+                                 "src/shaders/snowfield.tese", "src/shaders/snowfield.geom", "src/shaders/snowfield.frag");
     programSnowfield.linkProgram();
 #pragma endregion
 
@@ -61,17 +62,18 @@ int main() {
     lightU.color[0] = {1.0, 1.0, 1.0};
     lightU.count = 1;
 
-    auto snowfield =
-        Snowfield({0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, 1.0f, {1.0f, 0.0f, 0.0f}, 5.0f, 5.0f);
+    auto snowfield = Snowfield({0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, 1.0f, {1.0f, 0.0f, 0.0f},
+                               5.0f, 5.0f, 100, 100);
     auto snowFieldBaseMesh = snowfield.getBaseMesh();
     snowFieldBaseMesh.loadIntoBuffer(vertices, indices);
     scene._objects.push_back({snowFieldBaseMesh, snowfield._center, 1.0f, {1.0f, 1.0f, 1.0f}});
     auto snowFieldMesh = snowfield.getFieldMesh();
     snowFieldMesh.loadIntoBuffer(vertices, indices);
-    std::vector<float> map = std::vector<float>(100 * 100, 0.0f);
-    for (size_t i = 0; i < 50; i++) {
-        for (size_t j = 0; j < 50; j++) {
-            map[i * 100 + j] = 1.0f;
+    std::vector<float> map = std::vector<float>(
+        snowfield._heightmap_texture._height * snowfield._heightmap_texture._width, 0.0f);
+    for (size_t i = 0; i < snowfield._heightmap_texture._height; i++) {
+        for (size_t j = 0; j < snowfield._heightmap_texture._width; j++) {
+            map[i * snowfield._heightmap_texture._width + j] = (float)(rand() % 1000) / 1000.0f;
         }
     }
     snowfield._heightmap_texture.fill(map);
@@ -152,7 +154,7 @@ int main() {
         glfwGetFramebufferSize(pWindow, &width, &height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-#pragma region CAMERA_CONTROL
+#pragma region INPUTS
         double mousePos[2] = {0};
         glfwGetCursorPos(pWindow, mousePos, mousePos + 1);
         mousePos[0] = (width / 2) - mousePos[0];
@@ -163,6 +165,8 @@ int main() {
         camU.viewMatrix = scene._camera.getViewMatrix();
         camU.pos = scene._camera.getPosition();
         glNamedBufferData(uboCamera, sizeof(camU), &camU, GL_DYNAMIC_DRAW);
+
+        regenerateRandomSnowfield(currentFrame, snowfield);
 #pragma endregion
 
 #pragma region OBJECTS_DRAW
@@ -195,7 +199,7 @@ int main() {
         auto modelMatrix = glm::translate(glm::mat4(1.0), object._pos);
         modelMatrix = glm::scale(modelMatrix, glm::vec3(object._scale));
         instanceVertices.push_back({modelMatrix, object._albedo});
-        //snowfield._heightmap_texture.bind(0);
+        // snowfield._heightmap_texture.bind(0);
         glNamedBufferData(instanceBuffer, instanceVertices.size() * sizeof(InstanceVertex),
                           instanceVertices.data(), GL_STREAM_DRAW);
         glDrawElementsInstanced(GL_PATCHES, snowFieldMesh.getIndicesCount(), GL_UNSIGNED_INT,

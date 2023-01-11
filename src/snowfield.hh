@@ -18,11 +18,9 @@ public:
     glm::vec3 _left;
     float _width;
     HeightMapTexture _heightmap_texture;
-    uint _heightmapLength;
-    uint _heightmapWidth;
 
     Snowfield(const glm::vec3& center, const glm::vec3& up, float height, const glm::vec3& forward,
-              float length, float width)
+              float length, float width, uint heightmapLength, uint heignthmapWidth)
         : _center(center),
           _up(glm::normalize(up)),
           _height(height),
@@ -30,7 +28,7 @@ public:
           _length(length),
           _left(glm::cross(_up, _forward)),
           _width(width),
-          _heightmap_texture(100, 100){};
+          _heightmap_texture(heightmapLength, heignthmapWidth){};
 
     Mesh getBaseMesh();
     Mesh getFieldMesh();

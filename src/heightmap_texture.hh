@@ -13,9 +13,9 @@ public:
 
     void fill(std::vector<float> data);
     void bind(uint layout);
-
-private:
     uint _width;
     uint _height;
+
+private:
     GLuint _handle;
 };
