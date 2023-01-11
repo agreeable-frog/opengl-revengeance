@@ -19,12 +19,6 @@
 #include "scene.hh"
 #include "snowfield.hh"
 
-#define TEST_OPENGL_ERROR()                                                             \
-    do {                                                                                \
-        GLenum err = glGetError();                                                      \
-        if (err != GL_NO_ERROR) std::cerr << "OpenGL ERROR! " << __LINE__ << std::endl; \
-    } while (0)
-
 int main() {
 // SETUP
 #pragma region SETUP
@@ -150,19 +144,26 @@ int main() {
     }
 
     GLuint depthTexture;
-    glCreateTextures(GL_TEXTURE_2D, 1, &depthTexture); TEST_OPENGL_ERROR();
-    glTextureParameteri(depthTexture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); TEST_OPENGL_ERROR();
-    glTextureParameteri(depthTexture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); TEST_OPENGL_ERROR();
-    glTextureParameteri(depthTexture, GL_TEXTURE_MIN_FILTER, GL_NEAREST); TEST_OPENGL_ERROR();
-    glTextureParameteri(depthTexture, GL_TEXTURE_MAG_FILTER, GL_NEAREST); TEST_OPENGL_ERROR();
+    glCreateTextures(GL_TEXTURE_2D, 1, &depthTexture);
     glTextureStorage2D(depthTexture, 1, GL_DEPTH_COMPONENT32, snowfield._heightmap_texture._width,
-                       snowfield._heightmap_texture._height); TEST_OPENGL_ERROR();
+                       snowfield._heightmap_texture._height);
+
+    /* GLuint fakeColorTexture;
+    glCreateTextures(GL_TEXTURE_2D, 1, &fakeColorTexture);
+    glTextureStorage2D(fakeColorTexture, 1, GL_RGBA8, snowfield._heightmap_texture._width,
+                 snowfield._heightmap_texture._height);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); */
 
     GLuint framebuffer1;
-    glCreateFramebuffers(1, &framebuffer1); TEST_OPENGL_ERROR();
-    glNamedFramebufferTexture(framebuffer1, GL_DEPTH_ATTACHMENT, depthTexture, 0); TEST_OPENGL_ERROR();
+    glCreateFramebuffers(1, &framebuffer1);
+    glNamedFramebufferTexture(framebuffer1, GL_DEPTH_ATTACHMENT, depthTexture, 0);
+    // glNamedFramebufferTexture(framebuffer1, GL_COLOR_ATTACHMENT0, fakeColorTexture, 0);
+    // glNamedFramebufferDrawBuffer(framebuffer1, GL_COLOR_ATTACHMENT0);
 
-    glCheckNamedFramebufferStatus(framebuffer1, GL_FRAMEBUFFER); TEST_OPENGL_ERROR();
+    if (!(glCheckNamedFramebufferStatus(framebuffer1, GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)) {
+        std::cout << "framebuffer incomplete\n";
+    }
 #pragma endregion
 
 // DRAW
@@ -187,7 +188,8 @@ int main() {
         glNamedBufferData(uboCamera, sizeof(camU), &camU, GL_DYNAMIC_DRAW);
 
         glUseProgram(programDepthcheck.programId);
-        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer1); TEST_OPENGL_ERROR();
+        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer1);
+        glViewport(0, 0, snowfield._heightmap_texture._width, snowfield._heightmap_texture._height);
         glClear(GL_DEPTH_BUFFER_BIT);
 
         std::map<Mesh, std::vector<Object>> instanceGroups;
@@ -207,10 +209,11 @@ int main() {
                                     (void*)key.getIndexBufferOffset(), instanceVertices.size());
         }
 
-        /* std::vector<GLfloat>* d = new std::vector<GLfloat>(snowfield._heightmap_texture._width *
+        std::vector<GLfloat>* d = new std::vector<GLfloat>(snowfield._heightmap_texture._width *
                                                            snowfield._heightmap_texture._height);
         glReadPixels(0, 0, snowfield._heightmap_texture._width,
-                     snowfield._heightmap_texture._height, GL_DEPTH_COMPONENT, GL_FLOAT, d->data()); */
+                     snowfield._heightmap_texture._height, GL_DEPTH_COMPONENT, GL_FLOAT, d->data());
+     
 
 #pragma endregion
 
@@ -228,13 +231,14 @@ int main() {
 
         regenerateRandomSnowfield(currentFrame, snowfield);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glViewport(0, 0, width, height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 #pragma endregion
 
 #pragma region DRAW_SNOWFIELD
         glUseProgram(programSnowfield.programId);
         glPatchParameteri(GL_PATCH_VERTICES, 4);
-        //snowfield._heightmap_texture.fill(*d);
+        snowfield._heightmap_texture.fill(*d);
         snowfield._heightmap_texture.bind(0);
         Object object = Object(snowFieldMesh, snowfield._center, 1.0f, {1.0f, 0.0f, 0.0f});
         instanceVertices = {};
@@ -246,7 +250,7 @@ int main() {
         glDrawElementsInstanced(GL_PATCHES, snowFieldMesh.getIndicesCount(), GL_UNSIGNED_INT,
                                 (void*)snowFieldMesh.getIndexBufferOffset(),
                                 instanceVertices.size());
-        //delete d;
+        delete d;
 
 #pragma endregion
 
