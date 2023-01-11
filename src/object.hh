@@ -11,12 +11,17 @@ public:
           _pos(pos),
           _scale(scale),
           _albedo(albedo) {
+        _velocity = {0,0,0};
+
         static uint32_t uid = 0;
         _id = ++uid;
     }
     Mesh& _mesh;
     glm::vec3 _pos;
+    glm::vec3 _velocity;
     float _scale;
     glm::vec3 _albedo;
     uint32_t _id;
 };
+
+void updatePhysics(std::vector<Object> &objects, float dt);

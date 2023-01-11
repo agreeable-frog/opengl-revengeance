@@ -47,7 +47,7 @@ int main() {
     cubeMesh.loadIntoBuffer(vertices, indices);
     sphereMesh.loadIntoBuffer(vertices, indices);
 
-    scene._objects.push_back({cubeMesh, {0.0f, 0.0f, 0.0f}, 1.0f, {1.0f, 0.0f, 0.0f}});
+    scene._objects.push_back({cubeMesh, {0.0f, 10.0f, 0.0f}, 1.0f, {1.0f, 0.0f, 0.0f}});
 
     scene._camera = {glm::vec3{-5.0f, 5.01f, 0.01f},
                      glm::vec3{0.0f, 0.0f, 0.0f},
@@ -207,6 +207,8 @@ int main() {
                                 instanceVertices.size());
 
 #pragma endregion
+
+        updatePhysics(scene._objects, ellapsedTime);
 
         glfwSwapBuffers(pWindow);
         glfwPollEvents();
