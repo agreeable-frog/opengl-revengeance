@@ -52,7 +52,10 @@ int main() {
     sphereMesh.loadIntoBuffer(vertices, indices);
 
     scene._objects.push_back({cubeMesh, {1.0f, 3.5f, 1.0f}, 0.5f, {1.0f, 0.0f, 0.0f}});
-    scene._objects[0]._velocity = {0.0f, -0.5f, 0.0f};
+    scene._objects[0]._velocity = {-0.01f, 0.0f, 0.0f};
+
+    scene._objects.push_back({sphereMesh, {-1.0f, 3.5f, -1.0f}, 0.2f, {0.0f, 0.0f, 1.0f}});
+    scene._objects[1]._velocity = {0.02f, 0.0f, 0.005f};
 
     scene._camera = {glm::vec3{-5.0f, 5.01f, 0.01f},
                      glm::vec3{0.0f, 0.0f, 0.0f},
@@ -68,7 +71,7 @@ int main() {
     lightU.count = 1;
 
     auto snowfield = Snowfield({0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, 0.5f, {1.0f, 0.0f, 0.0f},
-                               5.0f, 5.0f, 100, 100);
+                               5.0f, 5.0f, 30, 100, 100);
     auto snowFieldBaseMesh = snowfield.getBaseMesh();
     snowFieldBaseMesh.loadIntoBuffer(vertices, indices);
     scene._objects.push_back(
@@ -163,6 +166,9 @@ int main() {
 // DRAW
 #pragma region DRAW
     registerInputFunctions(pWindow);
+
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable( GL_BLEND );
 
     double lastFrame = glfwGetTime();
     while (!glfwWindowShouldClose(pWindow)) {

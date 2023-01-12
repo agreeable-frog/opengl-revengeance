@@ -25,5 +25,9 @@ layout(std140, binding = 1) uniform uLight {
 light;
 
 void main() {
+    /*vec3 lit = vec3(0);
+    for (int i = 0; i < int(light.count); i++) {
+        lit += albedo * clamp(dot(light.pos[i], normal), 0.0, 1.0) * length(light.pos[i] - pos);
+    } */
     outFragColor.rgba = vec4(albedo, 1.0);
 }

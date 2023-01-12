@@ -1,7 +1,6 @@
 #include "snowfield.hh"
 
 #include <vector>
-#include <iostream>
 
 Mesh Snowfield::getBaseMesh() {
     auto& center = this->_center;
@@ -20,24 +19,23 @@ Mesh Snowfield::getBaseMesh() {
 Mesh Snowfield::getFieldMesh() {
     std::vector<MeshVertex> vertices;
     std::vector<uint32_t> indices;
-    uint subdiv = 10;
-    for (uint i = 0; i < subdiv; i++) {
-        for (uint j = 0; j < subdiv; j++) {
+    for (uint i = 0; i < _subdiv; i++) {
+        for (uint j = 0; j < _subdiv; j++) {
             static uint index = 0;
             glm::vec3 origin =
-                ((-_forward * _length / 2.0f) + _forward * _length * (i / (float)subdiv)) +
-                ((-_left * _width / 2.0f) + _left * _width * (j / (float)subdiv));
-            vertices.push_back({origin, _up, {(i / (float)subdiv), (j / (float)subdiv)}});
-            vertices.push_back({origin + _forward * _length / (float)subdiv,
+                ((-_forward * _length / 2.0f) + _forward * _length * (i / (float)_subdiv)) +
+                ((-_left * _width / 2.0f) + _left * _width * (j / (float)_subdiv));
+            vertices.push_back({origin, _up, {(i / (float)_subdiv), (j / (float)_subdiv)}});
+            vertices.push_back({origin + _forward * _length / (float)_subdiv,
                                 _up,
-                                {((i + 1) / (float)subdiv), (j / (float)subdiv)}});
-            vertices.push_back({origin + _left * _width / (float)subdiv,
+                                {((i + 1) / (float)_subdiv), (j / (float)_subdiv)}});
+            vertices.push_back({origin + _left * _width / (float)_subdiv,
                                 _up,
-                                {(i / (float)subdiv), ((j + 1) / (float)subdiv)}});
+                                {(i / (float)_subdiv), ((j + 1) / (float)_subdiv)}});
             vertices.push_back(
-                {origin + _forward * _length / (float)subdiv + _left * _width / (float)subdiv,
+                {origin + _forward * _length / (float)_subdiv + _left * _width / (float)_subdiv,
                  _up,
-                 {(i + 1) / (float)subdiv, (j + 1) / (float)subdiv}});
+                 {(i + 1) / (float)_subdiv, (j + 1) / (float)_subdiv}});
             std::vector<uint32_t> subIndices = {index++, index++, index++, index++};
             indices.insert(indices.end(), subIndices.begin(), subIndices.end());
         }
