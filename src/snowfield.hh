@@ -18,6 +18,7 @@ public:
     float _length;
     glm::vec3 _left;
     float _width;
+    std::vector<GLfloat> _heightmap;
     HeightMapTexture _heightmap_texture;
     OrthoCamera _camera;
 
@@ -30,10 +31,13 @@ public:
           _length(length),
           _left(glm::cross(_up, _forward)),
           _width(width),
+          _heightmap(heightmapLength * heignthmapWidth, 1.0f),
           _heightmap_texture(heightmapLength, heignthmapWidth),
           _camera(_center, _center + _depth * _up, _left, -_width / 2.0f, _width / 2.0f, -_length / 2.0f,
                   _length / 2.0f, 0.0f, _depth){};
 
     Mesh getBaseMesh();
     Mesh getFieldMesh();
+
+    void updateHeightMap(std::vector<GLfloat> *depth);
 };

@@ -1,6 +1,7 @@
 #include "snowfield.hh"
 
 #include <vector>
+#include <iostream>
 
 Mesh Snowfield::getBaseMesh() {
     auto& center = this->_center;
@@ -42,4 +43,14 @@ Mesh Snowfield::getFieldMesh() {
         }
     }
     return Mesh(vertices, indices);
+}
+
+void Snowfield::updateHeightMap(std::vector<GLfloat> *depth) {
+    for (size_t i = 0; i < _heightmap.size(); i++)
+    {
+        GLfloat &pix = _heightmap[i];
+        pix = std::min(pix, (*depth)[i]);
+    }
+
+    _heightmap_texture.fill(_heightmap);
 }

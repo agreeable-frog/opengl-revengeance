@@ -23,7 +23,7 @@ int main() {
 // SETUP
 #pragma region SETUP
     GLFWwindow* pWindow = setupContext(640, 480, "window");
-    registerDebugCallbacks();
+    //registerDebugCallbacks();
     if (!pWindow) return 1;
     auto programBasic = Program();
     programBasic.loadShaders("src/shaders/basic.vert", "src/shaders/basic.frag");
@@ -210,6 +210,8 @@ int main() {
         glReadPixels(0, 0, snowfield._heightmap_texture._width,
                      snowfield._heightmap_texture._height, GL_DEPTH_COMPONENT, GL_FLOAT, d->data());
 
+        snowfield.updateHeightMap(d);
+
 #pragma endregion
 
 #pragma region INPUTS
@@ -233,7 +235,6 @@ int main() {
         glPatchParameteri(GL_PATCH_VERTICES, 4);
         glEnable(GL_CULL_FACE);
         glUniform1f(0, snowfield._depth);
-        snowfield._heightmap_texture.fill(*d);
         snowfield._heightmap_texture.bind(0);
         Object object = Object(snowFieldMesh, snowfield._center, 1.0f, {1.0f, 0.0f, 0.0f});
         instanceVertices = {};
