@@ -51,7 +51,8 @@ int main() {
     cubeMesh.loadIntoBuffer(vertices, indices);
     sphereMesh.loadIntoBuffer(vertices, indices);
 
-    scene._objects.push_back({cubeMesh, {0.0f, 10.0f, 0.0f}, 1.0f, {1.0f, 0.0f, 0.0f}});
+    scene._objects.push_back({cubeMesh, {1.0f, 3.5f, 1.0f}, 0.5f, {1.0f, 0.0f, 0.0f}});
+    scene._objects[0]._velocity = {0.0f, -0.5f, 0.0f};
 
     scene._camera = {glm::vec3{-5.0f, 5.01f, 0.01f},
                      glm::vec3{0.0f, 0.0f, 0.0f},
@@ -66,21 +67,14 @@ int main() {
     lightU.color[0] = {1.0, 1.0, 1.0};
     lightU.count = 1;
 
-    auto snowfield = Snowfield({0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, 1.0f, {1.0f, 0.0f, 0.0f},
+    auto snowfield = Snowfield({0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, 0.5f, {1.0f, 0.0f, 0.0f},
                                5.0f, 5.0f, 100, 100);
     auto snowFieldBaseMesh = snowfield.getBaseMesh();
     snowFieldBaseMesh.loadIntoBuffer(vertices, indices);
-    // scene._objects.push_back({snowFieldBaseMesh, snowfield._center, 1.0f, {1.0f, 1.0f, 1.0f}});
+    scene._objects.push_back(
+        {snowFieldBaseMesh, snowfield._center - snowfield._up * 0.001f, 1.0f, {1.0f, 1.0f, 1.0f}});
     auto snowFieldMesh = snowfield.getFieldMesh();
     snowFieldMesh.loadIntoBuffer(vertices, indices);
-    std::vector<float> map = std::vector<float>(
-        snowfield._heightmap_texture._height * snowfield._heightmap_texture._width, 0.0f);
-    for (size_t i = 0; i < snowfield._heightmap_texture._height; i++) {
-        for (size_t j = 0; j < snowfield._heightmap_texture._width; j++) {
-            map[i * snowfield._heightmap_texture._width + j] = (float)(rand() % 1000) / 1000.0f;
-        }
-    }
-    snowfield._heightmap_texture.fill(map);
 #pragma endregion
 
 // BUFFERS CREATION
@@ -182,6 +176,7 @@ int main() {
 
 #pragma region DEFORM_SNOWFIELD
 
+        // setup ortho camera
         camU.projMatrix = snowfield._camera.getOrthoMatrix();
         camU.viewMatrix = snowfield._camera.getViewMatrix();
         camU.pos = {0.0f, 0.0f, 0.0f};
@@ -190,6 +185,7 @@ int main() {
         glUseProgram(programDepthcheck.programId);
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer1);
         glViewport(0, 0, snowfield._heightmap_texture._width, snowfield._heightmap_texture._height);
+        glDisable(GL_CULL_FACE);
         glClear(GL_DEPTH_BUFFER_BIT);
 
         std::map<Mesh, std::vector<Object>> instanceGroups;
@@ -213,7 +209,6 @@ int main() {
                                                            snowfield._heightmap_texture._height);
         glReadPixels(0, 0, snowfield._heightmap_texture._width,
                      snowfield._heightmap_texture._height, GL_DEPTH_COMPONENT, GL_FLOAT, d->data());
-     
 
 #pragma endregion
 
@@ -228,16 +223,16 @@ int main() {
         camU.viewMatrix = scene._camera.getViewMatrix();
         camU.pos = scene._camera.getPosition();
         glNamedBufferData(uboCamera, sizeof(camU), &camU, GL_DYNAMIC_DRAW);
-
-        regenerateRandomSnowfield(currentFrame, snowfield);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glViewport(0, 0, width, height);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 #pragma endregion
 
 #pragma region DRAW_SNOWFIELD
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glViewport(0, 0, width, height);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glUseProgram(programSnowfield.programId);
         glPatchParameteri(GL_PATCH_VERTICES, 4);
+        glEnable(GL_CULL_FACE);
+        glUniform1f(0, snowfield._depth);
         snowfield._heightmap_texture.fill(*d);
         snowfield._heightmap_texture.bind(0);
         Object object = Object(snowFieldMesh, snowfield._center, 1.0f, {1.0f, 0.0f, 0.0f});
