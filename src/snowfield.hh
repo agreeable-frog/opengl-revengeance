@@ -22,6 +22,9 @@ public:
     HeightMapTexture _heightmap_texture;
     uint _subdiv;
     OrthoCamera _camera;
+    GLuint _depthTexture;
+    GLuint _framebuffer;
+    Mesh _mesh;
 
     Snowfield(const glm::vec3& center, const glm::vec3& up, float depth, const glm::vec3& forward,
               float length, float width, uint subdiv, uint heightmapLength, uint heignthmapWidth)
@@ -32,9 +35,9 @@ public:
           _length(length),
           _left(glm::cross(_up, _forward)),
           _width(width),
-          _subdiv(subdiv),
           _heightmap(heightmapLength * heignthmapWidth, 1.0f),
           _heightmap_texture(heightmapLength, heignthmapWidth),
+          _subdiv(subdiv),
           _camera(_center, _center + _depth * _up, _left, -_width / 2.0f, _width / 2.0f, -_length / 2.0f,
                   _length / 2.0f, 0.0f, _depth){};
 

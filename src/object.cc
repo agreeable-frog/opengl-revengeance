@@ -3,7 +3,7 @@
 #define G -0.0981
 
 void updatePhysics(std::vector<Object> &objects, float dt) {
-    for (int i = 0; i < objects.size() - 1; i++) {
+    for (size_t i = 0; i < objects.size() - 1; i++) {
         Object &o = objects[i];
 
         o._velocity.y += G * dt;

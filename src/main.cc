@@ -19,11 +19,17 @@
 #include "scene.hh"
 #include "snowfield.hh"
 
+#define TEST_OPENGL_ERROR()                                                                     \
+    do {                                                                                        \
+        GLenum err = glGetError();                                                              \
+        if (err != GL_NO_ERROR) std::cerr << "OpenGL ERROR! main.cc " << __LINE__ << std::endl; \
+    } while (0)
+
 int main() {
 // SETUP
 #pragma region SETUP
     GLFWwindow* pWindow = setupContext(640, 480, "window");
-    //registerDebugCallbacks();
+    registerDebugCallbacks();
     if (!pWindow) return 1;
     auto programBasic = Program();
     programBasic.loadShaders("src/shaders/basic.vert", "src/shaders/basic.frag");
@@ -54,7 +60,7 @@ int main() {
     scene._objects.push_back({cubeMesh, {1.0f, 3.5f, 1.0f}, 0.5f, {1.0f, 0.0f, 0.0f}});
     scene._objects[0]._velocity = {-0.01f, 0.0f, 0.0f};
 
-    scene._objects.push_back({sphereMesh, {-1.0f, 3.5f, -1.0f}, 0.2f, {0.0f, 0.0f, 1.0f}});
+    scene._objects.push_back({sphereMesh, {-2.0f, 3.5f, -1.0f}, 0.2f, {0.0f, 0.0f, 1.0f}});
     scene._objects[1]._velocity = {0.02f, 0.0f, 0.005f};
 
     scene._camera = {glm::vec3{-5.0f, 5.01f, 0.01f},
@@ -140,27 +146,13 @@ int main() {
         glEnableVertexArrayAttrib(objectsVao, instanceAttributeDescription.location);
     }
 
-    GLuint depthTexture;
-    glCreateTextures(GL_TEXTURE_2D, 1, &depthTexture);
-    glTextureStorage2D(depthTexture, 1, GL_DEPTH_COMPONENT32, snowfield._heightmap_texture._width,
-                       snowfield._heightmap_texture._height);
+    glCreateTextures(GL_TEXTURE_2D, 1, &snowfield._depthTexture);
+    glTextureStorage2D(snowfield._depthTexture, 1, GL_DEPTH_COMPONENT32,
+                       snowfield._heightmap_texture._width, snowfield._heightmap_texture._height);
 
-    /* GLuint fakeColorTexture;
-    glCreateTextures(GL_TEXTURE_2D, 1, &fakeColorTexture);
-    glTextureStorage2D(fakeColorTexture, 1, GL_RGBA8, snowfield._heightmap_texture._width,
-                 snowfield._heightmap_texture._height);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); */
-
-    GLuint framebuffer1;
-    glCreateFramebuffers(1, &framebuffer1);
-    glNamedFramebufferTexture(framebuffer1, GL_DEPTH_ATTACHMENT, depthTexture, 0);
-    // glNamedFramebufferTexture(framebuffer1, GL_COLOR_ATTACHMENT0, fakeColorTexture, 0);
-    // glNamedFramebufferDrawBuffer(framebuffer1, GL_COLOR_ATTACHMENT0);
-
-    if (!(glCheckNamedFramebufferStatus(framebuffer1, GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)) {
-        std::cout << "framebuffer incomplete\n";
-    }
+    glCreateFramebuffers(1, &snowfield._framebuffer);
+    glNamedFramebufferTexture(snowfield._framebuffer, GL_DEPTH_ATTACHMENT, snowfield._depthTexture,
+                              0);
 #pragma endregion
 
 // DRAW
@@ -189,7 +181,7 @@ int main() {
         glNamedBufferData(uboCamera, sizeof(camU), &camU, GL_DYNAMIC_DRAW);
 
         glUseProgram(programDepthcheck.programId);
-        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer1);
+        glBindFramebuffer(GL_FRAMEBUFFER, snowfield._framebuffer);
         glViewport(0, 0, snowfield._heightmap_texture._width, snowfield._heightmap_texture._height);
         glDisable(GL_CULL_FACE);
         glClear(GL_DEPTH_BUFFER_BIT);
