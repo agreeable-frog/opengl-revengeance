@@ -84,6 +84,16 @@ int main() {
         {snowFieldBaseMesh, snowfield._center - snowfield._up * 0.001f, 1.0f, {1.0f, 1.0f, 1.0f}});
     auto snowFieldMesh = snowfield.getFieldMesh();
     snowFieldMesh.loadIntoBuffer(vertices, indices);
+
+    std::vector<float> map = std::vector<float>(
+        snowfield._heightmap_texture._height * snowfield._heightmap_texture._width, 0.0f);
+    for (size_t i = 0; i < snowfield._heightmap_texture._height; i++) {
+        for (size_t j = 0; j < snowfield._heightmap_texture._width; j++) {
+            map[i * snowfield._heightmap_texture._width + j] = 0.8 + (float)(rand() % 1000) / 5000;
+        }
+    }
+    snowfield._heightmap = map;
+    snowfield._heightmap_texture.fill(snowfield._heightmap);
 #pragma endregion
 
 // BUFFERS CREATION
@@ -160,7 +170,7 @@ int main() {
     registerInputFunctions(pWindow);
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glEnable( GL_BLEND );
+    glEnable(GL_BLEND);
 
     double lastFrame = glfwGetTime();
     while (!glfwWindowShouldClose(pWindow)) {
@@ -207,6 +217,8 @@ int main() {
                                                            snowfield._heightmap_texture._height);
         glReadPixels(0, 0, snowfield._heightmap_texture._width,
                      snowfield._heightmap_texture._height, GL_DEPTH_COMPONENT, GL_FLOAT, d->data());
+        saveDepthBuffer(currentFrame, *d, snowfield._heightmap_texture._width,
+                     snowfield._heightmap_texture._height);
 
         snowfield.updateHeightMap(d);
 

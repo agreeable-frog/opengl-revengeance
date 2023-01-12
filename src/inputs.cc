@@ -2,6 +2,9 @@
 
 #include <vector>
 #include <cstdlib>
+#include <iostream>
+
+#include "utils.hh"
 
 int KEYSTATES[512] = {0};
 
@@ -63,4 +66,20 @@ void moveCamera(float deltaTime, Camera& camera, double mouseMove[2]) {
         camera.move(Camera::MOVE_DIR::UP, deltaTime, 1.8f);
     }
     camera.rotate(mouseMove[0], mouseMove[1], 0.5f);
+}
+
+void saveDepthBuffer(float currentFrame, std::vector<GLfloat>& depthBuffer, uint width,
+                     uint height) {
+    static float lastFrame = 0.0f;
+    static int i = 0;
+    if (KEYSTATES[GLFW_KEY_T] == 1) {
+        if ((currentFrame - lastFrame) > 0.1f) {
+            lastFrame = currentFrame;
+        } else {
+            return;
+        }
+        std::cout << "save buffer\n";
+        saveBufferAsImage(depthBuffer, width, height,
+                          std::string("resources/depthbuffer" + std::to_string(++i) + ".png"));
+    }
 }

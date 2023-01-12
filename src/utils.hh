@@ -10,3 +10,4 @@ void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 GLFWwindow* setupContext(int windowWidth, int windowHeight, const std::string& windowName);
 void testOpenglError();
 void registerDebugCallbacks();
+void saveBufferAsImage(std::vector<GLfloat>& depthBuffer, uint width, uint height, const std::string& path);

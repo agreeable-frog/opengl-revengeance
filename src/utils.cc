@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include "lodepng.h"
+
 void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
@@ -84,4 +86,20 @@ void registerDebugCallbacks() {
     glEnable(GL_DEBUG_OUTPUT);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     glfwSetErrorCallback(glfwErrorCallback);
+}
+
+void saveBufferAsImage(std::vector<GLfloat>& depthBuffer, uint width, uint height, const std::string& path) {
+    std::vector<unsigned char> image;
+    std::vector<unsigned char> png;
+    for (size_t i = 0; i < width * height; i++) {
+        GLfloat value = depthBuffer[i];
+        unsigned char newValue = 255 - (255 * value);
+        for (size_t j = 0; j < 3; j++) 
+            image.push_back(newValue);
+        image.push_back(255);
+    }
+    unsigned error = lodepng::encode(png, image, width, height);
+    std::cout << path << '\n';
+    if(!error) lodepng::save_file(png, path);
+    if(error) std::cout << "encoder error " << error << ": "<< lodepng_error_text(error) << std::endl;
 }
