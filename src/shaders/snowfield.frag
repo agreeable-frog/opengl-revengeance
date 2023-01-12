@@ -14,5 +14,5 @@ layout(std140, binding = 1) uniform uLight {
 } light;
 
 void main() {
-    outFragColor = vec4(normal, 1.0);
+    outFragColor = vec4(0.0, 0.7, 0.0, 1.0);
 }

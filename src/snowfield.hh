@@ -21,6 +21,9 @@ public:
     std::vector<GLfloat> _heightmap;
     HeightMapTexture _heightmap_texture;
     OrthoCamera _camera;
+    GLuint _depthTexture;
+    GLuint _framebuffer;
+    Mesh _mesh;
 
     Snowfield(const glm::vec3& center, const glm::vec3& up, float depth, const glm::vec3& forward,
               float length, float width, uint heightmapLength, uint heignthmapWidth)
